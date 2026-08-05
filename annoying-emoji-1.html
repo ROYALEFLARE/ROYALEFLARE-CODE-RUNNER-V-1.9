@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANNOYING EMOJI - By Mr RoyaleFlare</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #00ffff 0%, #ff0033 50%, #00e5ff 100%);
+    background-size: 400% 400%;
+    animation: bgShift 12s ease infinite;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #fff;
+    text-align: center;
+    overflow-x: hidden;
+    padding-bottom: 80px;
+  }
+
+  @keyframes bgShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .header {
+    padding: 18px 10px 8px;
+    text-shadow: 0 0 12px #000, 0 0 25px #ff0044;
+  }
+
+  .header h1 {
+    font-size: clamp(1.8rem, 6vw, 3.2rem);
+    letter-spacing: 3px;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+
+  .header .by {
+    font-size: 0.95rem;
+    opacity: 0.9;
+    letter-spacing: 1px;
+  }
+
+  .health-display {
+    font-size: clamp(1.4rem, 4.5vw, 2.2rem);
+    font-weight: 800;
+    margin: 12px 0 6px;
+    text-shadow: 0 0 10px #000;
+  }
+
+  .emoji-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 10px auto 20px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .emoji {
+    font-size: 160px;
+    line-height: 1;
+    transition: transform 0.08s ease, filter 0.2s;
+    display: block;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.45));
+  }
+
+  .emoji.hit {
+    transform: scale(0.82) rotate(-8deg);
+  }
+
+  .emoji.dead {
+    filter: grayscale(0.7) brightness(0.6);
+    transform: scale(0.95);
+  }
+
+  .damage-float {
+    position: absolute;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #ffee00;
+    text-shadow: 0 0 8px #000, 0 0 4px #ff0000;
+    pointer-events: none;
+    animation: floatUp 0.9s ease-out forwards;
+    z-index: 20;
+  }
+
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-90px) scale(1.3); }
+  }
+
+  .weapons-section {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 10px 16px 30px;
+  }
+
+  .weapons-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    text-shadow: 0 0 8px #000;
+  }
+
+  .weapons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 14px;
+    justify-items: center;
+  }
+
+  .weapon-btn {
+    width: 130px;
+    background: rgba(0,0,0,0.35);
+    border: 3px solid rgba(255,255,255,0.35);
+    border-radius: 18px;
+    padding: 12px 8px 10px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, border-color 0.2s;
+    color: #fff;
+    font-weight: 700;
+    backdrop-filter: blur(6px);
+  }
+
+  .weapon-btn:hover:not(.locked) {
+    transform: translateY(-4px) scale(1.05);
+    background: rgba(255,255,255,0.18);
+    border-color: #fff;
+  }
+
+  .weapon-btn:active:not(.locked) {
+    transform: scale(0.95);
+  }
+
+  .weapon-btn.locked {
+    opacity: 0.55;
+    filter: grayscale(0.6);
+    cursor: not-allowed;
+  }
+
+  .weapon-btn .icon {
+    font-size: 2.4rem;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .weapon-btn .name {
+    font-size: 0.95rem;
+  }
+
+  .weapon-btn .dmg {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+
+  .weapon-btn.active-weapon {
+    border-color: #00ff88;
+    box-shadow: 0 0 18px rgba(0,255,136,0.5);
+    background: rgba(0,255,136,0.15);
+  }
+
+  .code-box {
+    margin: 22px auto 10px;
+    max-width: 340px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 16px;
+    padding: 16px;
+    border: 2px solid rgba(255,255,255,0.25);
+  }
+
+  .code-box input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    font-size: 1.1rem;
+    text-align: center;
+    letter-spacing: 2px;
+    font-weight: 700;
+    outline: none;
+  }
+
+  .code-box button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #ff0033, #ff6600);
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .code-box button:hover {
+    transform: scale(1.03);
+  }
+
+  .code-msg {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    min-height: 1.2em;
+  }
+
+  .get-codes {
+    display: inline-block;
+    margin: 18px auto 10px;
+    padding: 14px 28px;
+    background: #25D366;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .get-codes:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+  }
+
+  .footer {
+    margin-top: 28px;
+    padding: 16px 12px 30px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px #000;
+  }
+
+  .status {
+    margin-top: 8px;
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+
+  .unlocked-badge {
+    display: none;
+    margin-top: 8px;
+    color: #00ff88;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>ANNOYING EMOJI</h1>
+    <div class="by">BY MR ROYALEFLARE</div>
+  </div>
+
+  <div class="health-display" id="healthText">1000 HEALTH</div>
+  <div class="status" id="statusText">Punch free • Enter each weapon code to unlock</div>
+
+  <div class="emoji-container" id="emojiBox" title="Click / Tap to hit!">
+    <span class="emoji" id="emoji">😜</span>
+  </div>
+
+  <div class="weapons-section">
+    <div class="weapons-title">⚔️ WEAPONS ⚔️</div>
+    <div class="weapons-grid">
+      <button class="weapon-btn active-weapon" data-weapon="punch" data-dmg="1">
+        <span class="icon">👊</span>
+        <span class="name">PUNCH</span>
+        <span class="dmg">DMG 1</span>
+      </button>
+      <button class="weapon-btn locked" data-weapon="gun" data-dmg="5">
+        <span class="icon">🔫</span>
+        <span class="name">GUN</span>
+        <span class="dmg">DMG 5</span>
+      </button>
+      <button class="weapon-btn locked" data-weapon="bomb" data-dmg="10">
+        <span class="icon">💣</span>
+        <span class="name">BOMB</span>
+        <span class="dmg">DMG 10</span>
+      </button>
+      <button class="weapon-btn locked" data-weapon="knife" data-dmg="5">
+        <span class="icon">🔪</span>
+        <span class="name">KNIFE</span>
+        <span class="dmg">DMG 5</span>
+      </button>
+      <button class="weapon-btn locked" data-weapon="shock" data-dmg="20">
+        <span class="icon">⚡</span>
+        <span class="name">SHOCK WAVE</span>
+        <span class="dmg">DMG 20</span>
+      </button>
+      <button class="weapon-btn locked" data-weapon="nuke" data-dmg="100">
+        <span class="icon">☢️</span>
+        <span class="name">NUKE</span>
+        <span class="dmg">DMG 100</span>
+      </button>
+      <button class="weapon-btn locked" data-weapon="poison" data-dmg="500">
+        <span class="icon">☠️</span>
+        <span class="name">POISON</span>
+        <span class="dmg">DMG 500</span>
+      </button>
+    </div>
+
+    <div class="code-box" id="codeBox">
+      <input type="text" id="codeInput" placeholder="ENTER CODE" maxlength="20" autocomplete="off">
+      <button id="unlockBtn">UNLOCK WEAPON</button>
+      <div class="code-msg" id="codeMsg"></div>
+      <div class="unlocked-badge" id="unlockedBadge">✅ ALL WEAPONS UNLOCKED</div>
+    </div>
+
+    <a class="get-codes" href="https://whatsapp.com/channel/0029VbDfUwoDZ4Lg3clWKp2i" target="_blank" rel="noopener">
+      📲 GET CODES
+    </a>
+  </div>
+
+  <div class="footer">
+    SUBSCRIBE TO MR ROYALEFLARE ON YOUTUBE
+  </div>
+
+<script>
+  // ========== STATE ==========
+  let health = 1000;
+  let currentWeapon = 'punch';
+  let currentDmg = 1;
+  let isDead = false;
+
+  // Har weapon ka apna code (ek baar unlock, phir free)
+  const WEAPON_CODES = {
+    gun:    'GUN123',
+    bomb:   'BOMB777',
+    knife:  'KNIFE55',
+    shock:  'SHOCK20',
+    nuke:   'NUKE100',
+    poison: 'POISONX'
+  };
+
+  // Kaunse unlocked hain
+  const unlockedWeapons = {
+    punch: true,
+    gun: false,
+    bomb: false,
+    knife: false,
+    shock: false,
+    nuke: false,
+    poison: false
+  };
+
+  // ========== DOM ==========
+  const emojiEl = document.getElementById('emoji');
+  const healthText = document.getElementById('healthText');
+  const statusText = document.getElementById('statusText');
+  const emojiBox = document.getElementById('emojiBox');
+  const codeInput = document.getElementById('codeInput');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const codeMsg = document.getElementById('codeMsg');
+  const unlockedBadge = document.getElementById('unlockedBadge');
+  const codeBox = document.getElementById('codeBox');
+
+  // ========== EMOJI STAGES ==========
+  function getEmoji(h) {
+    if (h <= 0) return '😵';
+    if (h <= 99) return '😭';
+    if (h <= 199) return '😫';
+    if (h <= 299) return '😵‍💫';
+    if (h <= 399) return '😰';
+    if (h <= 499) return '😨';
+    if (h <= 599) return '😥';
+    if (h <= 699) return '😱';
+    if (h <= 799) return '🫨';
+    if (h <= 899) return '🤬';
+    if (h <= 999) return '😡';
+    return '😜';
+  }
+
+  // ========== AUDIO (Web Audio API - no external files) ==========
+  let audioCtx = null;
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone(freq, type, duration, volume = 0.3, slideTo = null) {
+    const ctx = ensureAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    if (slideTo) {
+      osc.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + duration);
+    }
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration + 0.05);
+  }
+
+  function playNoise(duration, volume = 0.25) {
+    const ctx = ensureAudio();
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    noise.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start();
+  }
+
+  function playWeaponSound(weapon) {
+    ensureAudio();
+    switch (weapon) {
+      case 'punch':
+        playTone(180, 'square', 0.12, 0.35, 60);
+        playNoise(0.08, 0.2);
+        break;
+      case 'gun':
+        playTone(900, 'sawtooth', 0.08, 0.25, 200);
+        playNoise(0.12, 0.3);
+        break;
+      case 'bomb':
+        playTone(120, 'sawtooth', 0.35, 0.4, 40);
+        playNoise(0.4, 0.35);
+        break;
+      case 'knife':
+        playTone(1400, 'triangle', 0.1, 0.3, 600);
+        playTone(800, 'sine', 0.08, 0.15);
+        break;
+      case 'shock':
+        playTone(400, 'square', 0.15, 0.3, 1200);
+        playTone(800, 'square', 0.2, 0.2, 100);
+        playNoise(0.25, 0.25);
+        break;
+      case 'nuke':
+        playTone(80, 'sawtooth', 0.6, 0.45, 30);
+        playNoise(0.7, 0.4);
+        setTimeout(() => playTone(60, 'sawtooth', 0.4, 0.3, 20), 200);
+        break;
+      case 'poison':
+        playTone(220, 'sine', 0.5, 0.25, 80);
+        playTone(330, 'triangle', 0.4, 0.2, 100);
+        playNoise(0.3, 0.15);
+        break;
+      default:
+        playTone(200, 'square', 0.1, 0.3);
+    }
+  }
+
+  // ========== UI UPDATE ==========
+  function updateUI() {
+    const h = Math.max(0, health);
+    healthText.textContent = h + ' HEALTH';
+    emojiEl.textContent = getEmoji(h);
+
+    if (h <= 0 && !isDead) {
+      isDead = true;
+      emojiEl.classList.add('dead');
+      statusText.textContent = '💀 EMOJI DEAD • Refresh to restart';
+    }
+  }
+
+  function showDamage(amount) {
+    const float = document.createElement('div');
+    float.className = 'damage-float';
+    float.textContent = '-' + amount;
+    // random position near center
+    const x = (Math.random() - 0.5) * 80;
+    float.style.left = `calc(50% + ${x}px)`;
+    float.style.top = '40%';
+    emojiBox.appendChild(float);
+    setTimeout(() => float.remove(), 900);
+  }
+
+  // ========== HIT ==========
+  function hit() {
+    if (isDead) return;
+
+    const dmg = currentDmg;
+    health = Math.max(0, health - dmg);
+
+    playWeaponSound(currentWeapon);
+    showDamage(dmg);
+
+    emojiEl.classList.add('hit');
+    setTimeout(() => emojiEl.classList.remove('hit'), 90);
+
+    updateUI();
+  }
+
+  // ========== WEAPON SELECT ==========
+  document.querySelectorAll('.weapon-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const w = btn.dataset.weapon;
+      if (!unlockedWeapons[w]) {
+        codeMsg.textContent = '🔒 ' + w.toUpperCase() + ' locked • Enter its code';
+        codeMsg.style.color = '#ffcc00';
+        return;
+      }
+      // set active
+      document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('active-weapon'));
+      btn.classList.add('active-weapon');
+      currentWeapon = w;
+      currentDmg = parseInt(btn.dataset.dmg, 10);
+      statusText.textContent = `Selected: ${w.toUpperCase()} (DMG ${currentDmg})`;
+    });
+  });
+
+  // ========== UNLOCK (har weapon ka alag code) ==========
+  function tryUnlock() {
+    const code = codeInput.value.trim().toUpperCase();
+    let found = false;
+
+    for (const [weapon, correctCode] of Object.entries(WEAPON_CODES)) {
+      if (code === correctCode && !unlockedWeapons[weapon]) {
+        unlockedWeapons[weapon] = true;
+        const btn = document.querySelector(`.weapon-btn[data-weapon="${weapon}"]`);
+        if (btn) btn.classList.remove('locked');
+        codeMsg.textContent = '✅ ' + weapon.toUpperCase() + ' unlocked!';
+        codeMsg.style.color = '#00ff88';
+        statusText.textContent = weapon.toUpperCase() + ' unlocked • Select it!';
+        found = true;
+        codeInput.value = '';
+        break;
+      }
+    }
+
+    // Check if all unlocked
+    const allUnlocked = Object.values(unlockedWeapons).every(v => v === true);
+    if (allUnlocked) {
+      unlockedBadge.style.display = 'block';
+      unlockedBadge.textContent = '✅ ALL WEAPONS UNLOCKED';
+    }
+
+    if (!found) {
+      // Already unlocked check
+      for (const [weapon, correctCode] of Object.entries(WEAPON_CODES)) {
+        if (code === correctCode && unlockedWeapons[weapon]) {
+          codeMsg.textContent = '⚠️ ' + weapon.toUpperCase() + ' already unlocked';
+          codeMsg.style.color = '#ffcc00';
+          found = true;
+          break;
+        }
+      }
+    }
+
+    if (!found) {
+      codeMsg.textContent = '❌ Wrong code • Get codes from WhatsApp';
+      codeMsg.style.color = '#ff6666';
+    }
+  }
+
+  unlockBtn.addEventListener('click', tryUnlock);
+  codeInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryUnlock();
+  });
+
+  // ========== CLICK / TAP EMOJI ==========
+  emojiBox.addEventListener('click', hit);
+  emojiBox.addEventListener('touchstart', e => {
+    e.preventDefault();
+    hit();
+  }, { passive: false });
+
+  // initial
+  updateUI();
+</script>
+</body>
+</html>
