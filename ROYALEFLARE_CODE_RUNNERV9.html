@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROYALEFLARE CODE RUNNER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --primary: #00ff41;
+    --primary-dim: #00cc33;
+    --bg: #0a0a0a;
+    --panel: rgba(0, 18, 0, 0.92);
+    --border: #00ff41;
+    --text: #e0ffe0;
+    --accent: #39ff14;
+    --danger: #ff0033;
+    --warning: #ffaa00;
+    --info: #00ccff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: #000;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  #matrixCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .app {
+    position: relative;
+    z-index: 10;
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 16px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 30px rgba(0, 255, 65, 0.05);
+    position: relative;
+  }
+
+  .header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.4rem, 4vw, 2.4rem);
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--primary);
+    text-shadow: 0 0 10px var(--primary), 0 0 30px var(--primary);
+    animation: pulseGlow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulseGlow {
+    from { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary); }
+    to { text-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary), 0 0 60px var(--accent); }
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--primary-dim);
+    margin-top: 6px;
+    letter-spacing: 2px;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    border: 1px solid var(--primary);
+    background: rgba(0, 40, 0, 0.7);
+    color: var(--primary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn:hover {
+    background: var(--primary);
+    color: #000;
+    box-shadow: 0 0 15px var(--primary);
+    transform: translateY(-1px);
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn.run { border-color: var(--accent); color: var(--accent); }
+  .btn.run:hover { background: var(--accent); color: #000; }
+
+  .btn.danger { border-color: var(--danger); color: var(--danger); }
+  .btn.danger:hover { background: var(--danger); color: #fff; }
+
+  .btn.info { border-color: var(--info); color: var(--info); }
+  .btn.info:hover { background: var(--info); color: #000; }
+
+  .btn.warning { border-color: var(--warning); color: var(--warning); }
+  .btn.warning:hover { background: var(--warning); color: #000; }
+
+  /* Main workspace */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    min-height: 70vh;
+    height: auto;
+  }
+
+  @media (max-width: 900px) {
+    .workspace {
+      grid-template-columns: 1fr;
+      min-height: auto;
+    }
+    .panel {
+      height: 60vh;
+      min-height: 480px;
+    }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.15);
+    min-height: 650px;
+    height: 72vh;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 30, 0, 0.9);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--primary);
+    letter-spacing: 1px;
+  }
+
+  .panel-header .tools {
+    display: flex;
+    gap: 6px;
+  }
+
+  .panel-header .tools button {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--primary-dim);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .panel-header .tools button:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  #codeEditor {
+    flex: 1;
+    width: 100%;
+    min-height: 580px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    color: #00ff88;
+    border: none;
+    outline: none;
+    padding: 14px;
+    font-family: 'Share Tech Mono', 'Consolas', monospace;
+    font-size: 15px;
+    line-height: 1.55;
+    resize: none;
+    tab-size: 2;
+    white-space: pre;
+    overflow: auto;
+  }
+
+  #codeEditor::selection {
+    background: rgba(0, 255, 65, 0.3);
+  }
+
+  .output-wrapper {
+    flex: 1;
+    position: relative;
+    min-height: 580px;
+    height: 100%;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  #previewFrame {
+    width: 100%;
+    height: 100%;
+    min-height: 580px;
+    border: none;
+    background: #fff;
+    display: block;
+  }
+
+  .console-panel {
+    height: 140px;
+    min-height: 140px;
+    background: #0a0a0a;
+    border-top: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 12px;
+    color: #aaa;
+    flex-shrink: 0;
+  }
+
+  .console-panel .log { color: #0f0; }
+  .console-panel .warn { color: #ff0; }
+  .console-panel .error { color: #f55; }
+  .console-panel .info { color: #0cf; }
+
+  /* Tags modal / panel */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: #0a1a0a;
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0, 255, 65, 0.4);
+  }
+
+  .modal-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: #0a1a0a;
+    z-index: 2;
+  }
+
+  .modal-header h2 {
+    color: var(--primary);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+  }
+
+  .close-btn:hover { background: var(--danger); color: #fff; }
+
+  .modal-body { padding: 16px; }
+
+  .tags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+  }
+
+  .tag-btn {
+    padding: 8px 6px;
+    background: rgba(0, 40, 0, 0.8);
+    border: 1px solid var(--primary-dim);
+    color: var(--primary);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .tag-btn:hover {
+    background: var(--primary);
+    color: #000;
+    box-shadow: 0 0 10px var(--primary);
+  }
+
+  .custom-tag-form {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .custom-tag-form h3 {
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .form-row input {
+    flex: 1;
+    min-width: 140px;
+    padding: 8px 10px;
+    background: #001100;
+    border: 1px solid var(--primary-dim);
+    color: var(--primary);
+    border-radius: 4px;
+    font-family: inherit;
+  }
+
+  .form-row input:focus { outline: none; border-color: var(--primary); }
+
+  /* Theme gallery */
+  .theme-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .theme-card {
+    height: 90px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .theme-card:hover, .theme-card.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px var(--primary);
+    transform: scale(1.03);
+  }
+
+  .theme-card span {
+    position: absolute;
+    bottom: 4px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.7rem;
+    background: rgba(0,0,0,0.7);
+    padding: 2px;
+  }
+
+  /* AI Assistant */
+  .ai-section {
+    background: var(--panel);
+    border: 2px solid var(--info);
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 0 15px rgba(0, 200, 255, 0.2);
+  }
+
+  .ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--info);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+  }
+
+  .ai-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 6px;
+  }
+
+  .ai-msg {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-width: 90%;
+  }
+
+  .ai-msg.bot {
+    background: rgba(0, 80, 100, 0.4);
+    border-left: 3px solid var(--info);
+    align-self: flex-start;
+  }
+
+  .ai-msg.user {
+    background: rgba(0, 60, 0, 0.5);
+    border-right: 3px solid var(--primary);
+    align-self: flex-end;
+  }
+
+  .ai-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ai-input-row input {
+    flex: 1;
+    padding: 10px;
+    background: #001a1a;
+    border: 1px solid var(--info);
+    color: var(--text);
+    border-radius: 4px;
+    font-family: inherit;
+  }
+
+  .ai-input-row input:focus { outline: none; border-color: #0ff; }
+
+  .ai-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .ai-quick button {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    background: rgba(0, 60, 80, 0.6);
+    border: 1px solid var(--info);
+    color: var(--info);
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  .ai-quick button:hover {
+    background: var(--info);
+    color: #000;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .footer p {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    color: var(--primary);
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px var(--primary);
+  }
+
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .footer a:hover { text-decoration: underline; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--primary-dim);
+    padding: 6px 10px;
+    background: rgba(0, 20, 0, 0.7);
+    border: 1px solid #003300;
+    border-radius: 4px;
+  }
+
+  /* Resizer */
+  .resizer {
+    width: 6px;
+    background: transparent;
+    cursor: col-resize;
+    position: relative;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #003300;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 12px 20px;
+    border-radius: 6px;
+    z-index: 2000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Line numbers + editor extras */
+  .editor-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    min-height: 580px;
+    height: 100%;
+  }
+
+  .line-numbers {
+    width: 42px;
+    background: rgba(0, 15, 0, 0.9);
+    color: #005500;
+    text-align: right;
+    padding: 14px 6px;
+    font-size: 15px;
+    line-height: 1.55;
+    overflow: hidden;
+    user-select: none;
+    border-right: 1px solid #003300;
+    flex-shrink: 0;
+  }
+
+  /* Snippets panel */
+  .snippets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .snippet-item {
+    padding: 8px 12px;
+    background: rgba(0, 30, 0, 0.6);
+    border: 1px solid #004400;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .snippet-item:hover {
+    border-color: var(--primary);
+    background: rgba(0, 50, 0, 0.7);
+  }
+
+  /* Settings */
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .setting-item label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--primary-dim);
+    font-size: 0.85rem;
+  }
+
+  .setting-item input[type="range"] {
+    width: 100%;
+  }
+
+  .setting-item select, .setting-item input[type="number"] {
+    width: 100%;
+    padding: 6px;
+    background: #001100;
+    border: 1px solid var(--primary-dim);
+    color: var(--primary);
+    border-radius: 4px;
+  }
+
+  /* Keyboard shortcuts hint */
+  .kbd {
+    background: #002200;
+    border: 1px solid #005500;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 0.75rem;
+  }
+
+  /* Fullscreen */
+  .fullscreen-mode .workspace {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #000;
+    padding: 12px;
+    grid-template-columns: 1fr 1fr;
+    height: 100vh;
+    min-height: 100vh;
+  }
+  .fullscreen-mode .panel {
+    height: calc(100vh - 24px);
+    min-height: calc(100vh - 24px);
+  }
+  .fullscreen-mode .header,
+  .fullscreen-mode .toolbar,
+  .fullscreen-mode .status-bar,
+  .fullscreen-mode .ai-section,
+  .fullscreen-mode .footer {
+    display: none;
+  }
+
+  /* Binary rain color control */
+  .rain-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+<canvas id="matrixCanvas"></canvas>
+
+<div class="app" id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <h1>ROYALEFLARE CODE RUNNER</h1>
+    <div class="subtitle">LIVE HTML • CSS • JS PLAYGROUND // MATRIX MODE</div>
+  </header>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar" id="toolbar">
+    <button class="btn run" onclick="runCode()" title="Ctrl+Enter">▶ RUN</button>
+    <button class="btn danger" onclick="clearAll()" title="Clear everything">🗑 CLEAR</button>
+    <button class="btn" onclick="copyCode()" title="Copy code">📋 COPY</button>
+    <button class="btn" onclick="downloadHTML()" title="Download as .html">⬇ DOWNLOAD</button>
+    <button class="btn info" onclick="openTagsModal()" title="Insert HTML tags">🏷 TAGS</button>
+    <button class="btn warning" onclick="openThemeModal()" title="Change wallpaper / theme">🎨 THEME</button>
+    <button class="btn" onclick="openSnippets()" title="Ready-made code snippets">📦 SNIPPETS</button>
+    <button class="btn" onclick="openSettings()" title="Editor settings">⚙ SETTINGS</button>
+    <button class="btn" onclick="toggleFullscreen()" title="Fullscreen editor">⛶ FULL</button>
+    <button class="btn danger" onclick="hardRefresh()" title="Refresh page & clear custom tags">🔄 REFRESH</button>
+    <button class="btn" onclick="toggleAutoRun()" id="autoRunBtn" title="Toggle auto-run">⏱ AUTO: OFF</button>
+    <button class="btn" onclick="prettifyCode()" title="Format code">✨ FORMAT</button>
+    <button class="btn" onclick="toggleLineNumbers()" title="Toggle line numbers"># LINES</button>
+    <button class="btn" onclick="insertTemplate('boilerplate')" title="Insert full HTML boilerplate">📄 BOILERPLATE</button>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <span id="statusLeft">Ready • Characters: 0 • Lines: 1</span>
+    <span id="statusRight">Local Storage: Active • Matrix Rain: ON</span>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div class="workspace" id="workspace">
+    <!-- CODE PANEL -->
+    <div class="panel" id="codePanel">
+      <div class="panel-header">
+        <span>⚡ CODE EDITOR</span>
+        <div class="tools">
+          <button onclick="increaseFont()" title="Increase font">A+</button>
+          <button onclick="decreaseFont()" title="Decrease font">A-</button>
+          <button onclick="toggleWrap()" title="Toggle wrap">WRAP</button>
+          <button onclick="findReplace()" title="Find & Replace">FIND</button>
+        </div>
+      </div>
+      <div class="editor-container">
+        <div class="line-numbers" id="lineNumbers">1</div>
+        <textarea id="codeEditor" spellcheck="false" placeholder="Write your HTML / CSS / JS here and press RUN..."></textarea>
+      </div>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel" id="outputPanel">
+      <div class="panel-header">
+        <span>🖥 LIVE OUTPUT</span>
+        <div class="tools">
+          <button onclick="refreshPreview()" title="Force refresh preview">↻</button>
+          <button onclick="openPreviewNewTab()" title="Open in new tab">↗</button>
+          <button onclick="toggleConsole()" title="Toggle console">TERM</button>
+          <button onclick="clearConsole()" title="Clear console">CLR</button>
+        </div>
+      </div>
+      <div class="output-wrapper">
+        <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups"></iframe>
+      </div>
+      <div class="console-panel" id="consolePanel" style="display:none;">
+        <div id="consoleOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ASSISTANT -->
+  <div class="ai-section">
+    <div class="ai-header">
+      <span>🤖 ROYALEFLARE AI ASSISTANT</span>
+      <button class="btn" style="padding:4px 10px;font-size:0.75rem;" onclick="clearAIChat()">Clear Chat</button>
+    </div>
+    <div class="ai-chat" id="aiChat">
+      <div class="ai-msg bot">Assalam o Alaikum! Main aapka coding assistant hoon. Code likhne, fix karne, ya koi idea chahiye to poochho. Examples: "button banao", "navbar", "animation", "form", "responsive card"...</div>
+    </div>
+    <div class="ai-input-row">
+      <input type="text" id="aiInput" placeholder="Code help maango... (e.g. 'neon button banao')" onkeydown="if(event.key==='Enter')askAI()">
+      <button class="btn info" onclick="askAI()">ASK AI</button>
+    </div>
+    <div class="ai-quick">
+      <button onclick="quickAI('neon button')">Neon Button</button>
+      <button onclick="quickAI('responsive navbar')">Navbar</button>
+      <button onclick="quickAI('card with hover')">Hover Card</button>
+      <button onclick="quickAI('login form')">Login Form</button>
+      <button onclick="quickAI('css animation')">Animation</button>
+      <button onclick="quickAI('dark mode toggle')">Dark Toggle</button>
+      <button onclick="quickAI('particle effect')">Particles</button>
+      <button onclick="quickAI('typing effect')">Typing Effect</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>SUBSCRIBE TO <a href="https://www.youtube.com/@MRROYALEFLARE" target="_blank" rel="noopener">MR ROYALEFLARE</a> ON YOUTUBE</p>
+  </footer>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- TAGS MODAL -->
+<div class="modal-overlay" id="tagsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🏷 HTML TAGS LIBRARY</h2>
+      <button class="close-btn" onclick="closeModal('tagsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="tags-grid" id="tagsGrid"></div>
+      <div class="custom-tag-form">
+        <h3>➕ Create Custom Tag</h3>
+        <div class="form-row">
+          <input type="text" id="customOpen" placeholder="OPENING TAG  e.g. <my-tag>">
+          <input type="text" id="customClose" placeholder="CLOSING TAG  e.g. </my-tag>">
+        </div>
+        <button class="btn run" onclick="saveCustomTag()">💾 SAVE CUSTOM TAG</button>
+        <div id="customTagsList" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- THEME MODAL -->
+<div class="modal-overlay" id="themeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🎨 THEME & WALLPAPER GALLERY</h2>
+      <button class="close-btn" onclick="closeModal('themeModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="theme-gallery" id="themeGallery"></div>
+      <div style="margin-top:16px;">
+        <label style="color:var(--primary-dim);">Matrix Rain Color:</label>
+        <input type="color" id="rainColor" value="#00ff41" onchange="setRainColor(this.value)" style="margin-left:8px;vertical-align:middle;">
+        <label style="margin-left:16px;color:var(--primary-dim);">Speed:</label>
+        <input type="range" id="rainSpeed" min="20" max="100" value="50" onchange="setRainSpeed(this.value)" style="width:120px;vertical-align:middle;">
+        <button class="btn" style="margin-left:10px;" onclick="toggleRain()">Toggle Rain</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SNIPPETS MODAL -->
+<div class="modal-overlay" id="snippetsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📦 CODE SNIPPETS</h2>
+      <button class="close-btn" onclick="closeModal('snippetsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="snippets-list" id="snippetsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙ EDITOR SETTINGS</h2>
+      <button class="close-btn" onclick="closeModal('settingsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label>Font Size (px)</label>
+          <input type="number" id="fontSizeInput" value="14" min="10" max="28" onchange="setFontSize(this.value)">
+        </div>
+        <div class="setting-item">
+          <label>Tab Size</label>
+          <input type="number" id="tabSizeInput" value="2" min="2" max="8" onchange="setTabSize(this.value)">
+        </div>
+        <div class="setting-item">
+          <label>Editor Theme</label>
+          <select id="editorTheme" onchange="setEditorTheme(this.value)">
+            <option value="matrix">Matrix Green</option>
+            <option value="cyber">Cyber Blue</option>
+            <option value="amber">Amber Terminal</option>
+            <option value="white">Light</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label>Auto-save</label>
+          <select id="autoSaveSelect" onchange="toggleAutoSave(this.value)">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+      </div>
+      <p style="margin-top:16px;font-size:0.8rem;color:#888;">
+        Keyboard: <span class="kbd">Ctrl+Enter</span> Run • 
+        <span class="kbd">Ctrl+S</span> Download • 
+        <span class="kbd">Ctrl+/</span> Comment
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================== MATRIX RAIN ==================== */
+const canvas = document.getElementById('matrixCanvas');
+const ctx = canvas.getContext('2d');
+let rainColor = '#00ff41';
+let rainSpeed = 50;
+let rainActive = true;
+let animationId;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  initDrops();
+});
+
+const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+-=';
+let fontSize = 16;
+let columns, drops;
+
+function initDrops() {
+  columns = Math.floor(canvas.width / fontSize);
+  drops = Array(columns).fill(1);
+}
+initDrops();
+
+function drawMatrix() {
+  if (!rainActive) {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = rainColor;
+  ctx.font = fontSize + 'px monospace';
+
+  for (let i = 0; i < drops.length; i++) {
+    const text = chars[Math.floor(Math.random() * chars.length)];
+    const x = i * fontSize;
+    const y = drops[i] * fontSize;
+    ctx.fillText(text, x, y);
+    if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  }
+}
+
+function matrixLoop() {
+  drawMatrix();
+  animationId = setTimeout(matrixLoop, rainSpeed);
+}
+matrixLoop();
+
+function setRainColor(c) { rainColor = c; }
+function setRainSpeed(s) { rainSpeed = +s; }
+function toggleRain() {
+  rainActive = !rainActive;
+  showToast(rainActive ? 'Matrix Rain ON' : 'Matrix Rain OFF');
+}
+
+/* ==================== THEMES / WALLPAPERS ==================== */
+const themes = [
+  { name: 'Classic Matrix', bg: '#000', rain: '#00ff41', panel: 'rgba(0,18,0,0.93)', border: '#00ff41' },
+  { name: 'Cyber Blue', bg: '#000510', rain: '#00ccff', panel: 'rgba(0,12,28,0.93)', border: '#00ccff' },
+  { name: 'Neon Purple', bg: '#0a0015', rain: '#bf00ff', panel: 'rgba(18,0,28,0.93)', border: '#bf00ff' },
+  { name: 'Blood Red', bg: '#100000', rain: '#ff0033', panel: 'rgba(28,0,0,0.93)', border: '#ff0033' },
+  { name: 'Golden', bg: '#0a0800', rain: '#ffd700', panel: 'rgba(22,18,0,0.93)', border: '#ffd700' },
+  { name: 'Ice White', bg: '#050510', rain: '#e0e0ff', panel: 'rgba(8,8,22,0.93)', border: '#a0a0ff' },
+  { name: 'Toxic Green', bg: '#001a00', rain: '#39ff14', panel: 'rgba(0,25,0,0.94)', border: '#39ff14' },
+  { name: 'Sunset', bg: '#1a0a00', rain: '#ff6600', panel: 'rgba(28,10,0,0.93)', border: '#ff6600' },
+  { name: 'Deep Ocean', bg: '#000a15', rain: '#00ffaa', panel: 'rgba(0,12,22,0.93)', border: '#00ffaa' },
+  { name: 'Hacker Black', bg: '#000', rain: '#0f0', panel: 'rgba(0,10,0,0.94)', border: '#0f0' },
+];
+
+function openThemeModal() {
+  const gallery = document.getElementById('themeGallery');
+  gallery.innerHTML = '';
+  themes.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'theme-card';
+    card.style.background = `linear-gradient(135deg, ${t.bg}, ${t.rain}33)`;
+    card.innerHTML = `<span>${t.name}</span>`;
+    card.onclick = () => applyTheme(t, i);
+    gallery.appendChild(card);
+  });
+  document.getElementById('themeModal').classList.add('active');
+}
+
+function applyTheme(t, idx) {
+  document.documentElement.style.setProperty('--primary', t.rain);
+  document.documentElement.style.setProperty('--primary-dim', t.rain + 'aa');
+  document.documentElement.style.setProperty('--border', t.border);
+  document.documentElement.style.setProperty('--panel', t.panel);
+  document.documentElement.style.setProperty('--accent', t.rain);
+  rainColor = t.rain;
+  document.getElementById('rainColor').value = t.rain;
+  document.body.style.background = t.bg;
+  localStorage.setItem('rf_theme', JSON.stringify(t));
+  showToast('Theme applied: ' + t.name);
+  closeModal('themeModal');
+}
+
+/* ==================== EDITOR CORE ==================== */
+const editor = document.getElementById('codeEditor');
+const lineNumbers = document.getElementById('lineNumbers');
+let autoRun = false;
+let autoRunTimer = null;
+let showLines = true;
+let fontSizePx = 14;
+let autoSave = true;
+
+function updateLineNumbers() {
+  const lines = editor.value.split('\n').length;
+  let html = '';
+  for (let i = 1; i <= lines; i++) html += i + '<br>';
+  lineNumbers.innerHTML = html || '1';
+  lineNumbers.scrollTop = editor.scrollTop;
+}
+
+editor.addEventListener('scroll', () => {
+  lineNumbers.scrollTop = editor.scrollTop;
+});
+
+editor.addEventListener('input', () => {
+  updateLineNumbers();
+  updateStatus();
+  if (autoSave) localStorage.setItem('rf_code', editor.value);
+  if (autoRun) {
+    clearTimeout(autoRunTimer);
+    autoRunTimer = setTimeout(runCode, 600);
+  }
+});
+
+editor.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 2;
+    updateLineNumbers();
+  }
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    runCode();
+  }
+  if (e.ctrlKey && e.key === 's') {
+    e.preventDefault();
+    downloadHTML();
+  }
+  if (e.ctrlKey && e.key === '/') {
+    e.preventDefault();
+    toggleComment();
+  }
+});
+
+function updateStatus() {
+  const text = editor.value;
+  const chars = text.length;
+  const lines = text.split('\n').length;
+  document.getElementById('statusLeft').textContent = `Ready • Characters: ${chars} • Lines: ${lines}`;
+}
+
+function increaseFont() {
+  fontSizePx = Math.min(28, fontSizePx + 1);
+  editor.style.fontSize = fontSizePx + 'px';
+  lineNumbers.style.fontSize = fontSizePx + 'px';
+  document.getElementById('fontSizeInput').value = fontSizePx;
+}
+
+function decreaseFont() {
+  fontSizePx = Math.max(10, fontSizePx - 1);
+  editor.style.fontSize = fontSizePx + 'px';
+  lineNumbers.style.fontSize = fontSizePx + 'px';
+  document.getElementById('fontSizeInput').value = fontSizePx;
+}
+
+function setFontSize(v) {
+  fontSizePx = +v;
+  editor.style.fontSize = fontSizePx + 'px';
+  lineNumbers.style.fontSize = fontSizePx + 'px';
+}
+
+function setTabSize(v) {
+  editor.style.tabSize = v;
+}
+
+function toggleWrap() {
+  editor.style.whiteSpace = editor.style.whiteSpace === 'pre-wrap' ? 'pre' : 'pre-wrap';
+  showToast(editor.style.whiteSpace === 'pre-wrap' ? 'Word Wrap ON' : 'Word Wrap OFF');
+}
+
+function toggleLineNumbers() {
+  showLines = !showLines;
+  lineNumbers.style.display = showLines ? 'block' : 'none';
+}
+
+function setEditorTheme(theme) {
+  const themesMap = {
+    matrix: { bg: 'rgba(0,0,0,0.6)', color: '#00ff88' },
+    cyber: { bg: 'rgba(0,10,20,0.7)', color: '#00ccff' },
+    amber: { bg: 'rgba(20,10,0,0.7)', color: '#ffaa00' },
+    white: { bg: '#f5f5f5', color: '#222' }
+  };
+  const t = themesMap[theme] || themesMap.matrix;
+  editor.style.background = t.bg;
+  editor.style.color = t.color;
+}
+
+function toggleAutoSave(v) {
+  autoSave = v === 'true';
+}
+
+function toggleComment() {
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const selected = editor.value.substring(start, end);
+  if (selected.includes('<!--')) {
+    editor.value = editor.value.substring(0, start) + selected.replace(/<!--\s?/g, '').replace(/\s?-->/g, '') + editor.value.substring(end);
+  } else {
+    editor.value = editor.value.substring(0, start) + '<!-- ' + selected + ' -->' + editor.value.substring(end);
+  }
+  updateLineNumbers();
+}
+
+/* ==================== RUN / PREVIEW ==================== */
+function runCode() {
+  const code = editor.value;
+  const frame = document.getElementById('previewFrame');
+  
+  // Inject console bridge
+  const consoleBridge = `
+    <script>
+      (function(){
+        const levels = ['log','warn','error','info','debug'];
+        levels.forEach(level => {
+          const orig = console[level];
+          console[level] = function(...args) {
+            orig.apply(console, args);
+            try {
+              parent.postMessage({ type: 'console', level, args: args.map(a => {
+                try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
+                catch(e){ return String(a); }
+              })}, '*');
+            } catch(e){}
+          };
+        });
+        window.onerror = function(msg, url, line) {
+          parent.postMessage({ type: 'console', level: 'error', args: [msg + ' (line ' + line + ')'] }, '*');
+        };
+      })();
+    <\/script>
+  `;
+  
+  let finalCode = code;
+  if (!code.includes('<html') && !code.includes('<!DOCTYPE')) {
+    // Wrap partial code
+    finalCode = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:system-ui;margin:16px;}</style></head><body>${code}${consoleBridge}</body></html>`;
+  } else {
+    // Inject before </body> or at end
+    if (code.includes('</body>')) {
+      finalCode = code.replace('</body>', consoleBridge + '</body>');
+    } else {
+      finalCode = code + consoleBridge;
+    }
+  }
+
+  frame.srcdoc = finalCode;
+  showToast('▶ Code executed');
+  document.getElementById('statusRight').textContent = 'Last run: ' + new Date().toLocaleTimeString() + ' • Matrix Rain: ' + (rainActive ? 'ON' : 'OFF');
+}
+
+function refreshPreview() { runCode(); }
+
+function openPreviewNewTab() {
+  const w = window.open();
+  w.document.write(editor.value);
+  w.document.close();
+}
+
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'console') {
+    const out = document.getElementById('consoleOutput');
+    const div = document.createElement('div');
+    div.className = e.data.level;
+    div.textContent = `[${e.data.level.toUpperCase()}] ${e.data.args.join(' ')}`;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+  }
+});
+
+function toggleConsole() {
+  const p = document.getElementById('consolePanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+function clearConsole() {
+  document.getElementById('consoleOutput').innerHTML = '';
+}
+
+function toggleAutoRun() {
+  autoRun = !autoRun;
+  document.getElementById('autoRunBtn').textContent = autoRun ? '⏱ AUTO: ON' : '⏱ AUTO: OFF';
+  showToast(autoRun ? 'Auto-run enabled' : 'Auto-run disabled');
+}
+
+/* ==================== BUTTONS ==================== */
+function clearAll() {
+  if (confirm('Clear editor and output?')) {
+    editor.value = '';
+    updateLineNumbers();
+    updateStatus();
+    document.getElementById('previewFrame').srcdoc = '';
+    clearConsole();
+    localStorage.removeItem('rf_code');
+    showToast('Cleared');
+  }
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(editor.value).then(() => showToast('Code copied!'));
+}
+
+function downloadHTML() {
+  const blob = new Blob([editor.value], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'royale flare-code-' + Date.now() + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Downloaded as .html');
+}
+
+function hardRefresh() {
+  if (confirm('Page refresh hoga aur custom tags clear ho jayenge. Continue?')) {
+    localStorage.removeItem('rf_custom_tags');
+    location.reload();
+  }
+}
+
+function toggleFullscreen() {
+  document.body.classList.toggle('fullscreen-mode');
+  showToast(document.body.classList.contains('fullscreen-mode') ? 'Fullscreen ON' : 'Fullscreen OFF');
+}
+
+function findReplace() {
+  const find = prompt('Find:');
+  if (!find) return;
+  const replace = prompt('Replace with:');
+  if (replace === null) return;
+  editor.value = editor.value.split(find).join(replace);
+  updateLineNumbers();
+  updateStatus();
+  showToast('Replaced');
+}
+
+function prettifyCode() {
+  // Very basic formatter
+  let code = editor.value;
+  code = code.replace(/></g, '>\n<');
+  // Simple indent
+  let lines = code.split('\n');
+  let indent = 0;
+  const result = [];
+  lines.forEach(line => {
+    line = line.trim();
+    if (line.match(/^<\//) || line.match(/^-->/)) indent = Math.max(0, indent - 1);
+    result.push('  '.repeat(indent) + line);
+    if (line.match(/^<[^/!].*[^/]>$/) && !line.match(/<(img|br|hr|input|meta|link|source|area|base|col|embed|wbr)/i)) {
+      indent++;
+    }
+  });
+  editor.value = result.join('\n');
+  updateLineNumbers();
+  showToast('Code formatted (basic)');
+}
+
+/* ==================== TAGS ==================== */
+const defaultTags = [
+  { name: 'html', open: '<html>', close: '</html>' },
+  { name: 'DOCTYPE', open: '<!DOCTYPE html>', close: '' },
+  { name: 'head', open: '<head>', close: '</head>' },
+  { name: 'body', open: '<body>', close: '</body>' },
+  { name: 'title', open: '<title>', close: '</title>' },
+  { name: 'meta', open: '<meta charset="UTF-8">', close: '' },
+  { name: 'link', open: '<link rel="stylesheet" href="">', close: '' },
+  { name: 'script', open: '<script>', close: '<\/script>' },
+  { name: 'style', open: '<style>', close: '</style>' },
+  { name: 'div', open: '<div>', close: '</div>' },
+  { name: 'span', open: '<span>', close: '</span>' },
+  { name: 'p', open: '<p>', close: '</p>' },
+  { name: 'h1', open: '<h1>', close: '</h1>' },
+  { name: 'h2', open: '<h2>', close: '</h2>' },
+  { name: 'h3', open: '<h3>', close: '</h3>' },
+  { name: 'a', open: '<a href="">', close: '</a>' },
+  { name: 'img', open: '<img src="" alt="">', close: '' },
+  { name: 'ul', open: '<ul>', close: '</ul>' },
+  { name: 'ol', open: '<ol>', close: '</ol>' },
+  { name: 'li', open: '<li>', close: '</li>' },
+  { name: 'table', open: '<table>', close: '</table>' },
+  { name: 'tr', open: '<tr>', close: '</tr>' },
+  { name: 'td', open: '<td>', close: '</td>' },
+  { name: 'th', open: '<th>', close: '</th>' },
+  { name: 'form', open: '<form>', close: '</form>' },
+  { name: 'input', open: '<input type="text">', close: '' },
+  { name: 'button', open: '<button>', close: '</button>' },
+  { name: 'textarea', open: '<textarea>', close: '</textarea>' },
+  { name: 'select', open: '<select>', close: '</select>' },
+  { name: 'option', open: '<option>', close: '</option>' },
+  { name: 'label', open: '<label>', close: '</label>' },
+  { name: 'section', open: '<section>', close: '</section>' },
+  { name: 'article', open: '<article>', close: '</article>' },
+  { name: 'header', open: '<header>', close: '</header>' },
+  { name: 'footer', open: '<footer>', close: '</footer>' },
+  { name: 'nav', open: '<nav>', close: '</nav>' },
+  { name: 'aside', open: '<aside>', close: '</aside>' },
+  { name: 'main', open: '<main>', close: '</main>' },
+  { name: 'figure', open: '<figure>', close: '</figure>' },
+  { name: 'figcaption', open: '<figcaption>', close: '</figcaption>' },
+  { name: 'video', open: '<video controls>', close: '</video>' },
+  { name: 'audio', open: '<audio controls>', close: '</audio>' },
+  { name: 'canvas', open: '<canvas>', close: '</canvas>' },
+  { name: 'iframe', open: '<iframe src="">', close: '</iframe>' },
+  { name: 'br', open: '<br>', close: '' },
+  { name: 'hr', open: '<hr>', close: '' },
+  { name: 'strong', open: '<strong>', close: '</strong>' },
+  { name: 'em', open: '<em>', close: '</em>' },
+  { name: 'code', open: '<code>', close: '</code>' },
+  { name: 'pre', open: '<pre>', close: '</pre>' },
+  { name: 'blockquote', open: '<blockquote>', close: '</blockquote>' },
+  { name: 'details', open: '<details>', close: '</details>' },
+  { name: 'summary', open: '<summary>', close: '</summary>' },
+];
+
+function openTagsModal() {
+  const grid = document.getElementById('tagsGrid');
+  grid.innerHTML = '';
+  defaultTags.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tag-btn';
+    btn.textContent = t.name;
+    btn.onclick = () => insertTag(t.open, t.close);
+    grid.appendChild(btn);
+  });
+  renderCustomTags();
+  document.getElementById('tagsModal').classList.add('active');
+}
+
+function insertTag(open, close) {
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const selected = editor.value.substring(start, end);
+  const insert = open + selected + close;
+  editor.value = editor.value.substring(0, start) + insert + editor.value.substring(end);
+  editor.focus();
+  editor.selectionStart = editor.selectionEnd = start + open.length + selected.length;
+  updateLineNumbers();
+  updateStatus();
+  closeModal('tagsModal');
+  showToast('Tag inserted');
+}
+
+function saveCustomTag() {
+  const open = document.getElementById('customOpen').value.trim();
+  const close = document.getElementById('customClose').value.trim();
+  if (!open) return showToast('Opening tag required');
+  let customs = JSON.parse(localStorage.getItem('rf_custom_tags') || '[]');
+  customs.push({ name: open.replace(/[<>\/]/g, '').slice(0, 12) || 'custom', open, close });
+  localStorage.setItem('rf_custom_tags', JSON.stringify(customs));
+  document.getElementById('customOpen').value = '';
+  document.getElementById('customClose').value = '';
+  renderCustomTags();
+  showToast('Custom tag saved');
+}
+
+function renderCustomTags() {
+  const list = document.getElementById('customTagsList');
+  const customs = JSON.parse(localStorage.getItem('rf_custom_tags') || '[]');
+  if (!customs.length) {
+    list.innerHTML = '<p style="color:#555;font-size:0.8rem;">No custom tags yet</p>';
+    return;
+  }
+  list.innerHTML = '<h4 style="color:var(--accent);margin-bottom:8px;">Your Custom Tags:</h4>';
+  customs.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tag-btn';
+    btn.style.margin = '3px';
+    btn.textContent = t.name;
+    btn.onclick = () => insertTag(t.open, t.close);
+    list.appendChild(btn);
+  });
+}
+
+/* ==================== SNIPPETS ==================== */
+const snippets = [
+  {
+    title: 'Full HTML5 Boilerplate',
+    code: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <h1>Hello World</h1>
+  <script>
+    console.log('Ready');
+  <\/script>
+</body>
+</html>`
+  },
+  {
+    title: 'Neon Glow Button',
+    code: `<style>
+.neon-btn {
+  padding: 14px 32px;
+  font-size: 18px;
+  color: #0f0;
+  background: transparent;
+  border: 2px solid #0f0;
+  border-radius: 8px;
+  cursor: pointer;
+  text-shadow: 0 0 10px #0f0;
+  box-shadow: 0 0 15px #0f0, inset 0 0 10px #0f033;
+  transition: all 0.3s;
+}
+.neon-btn:hover {
+  background: #0f0;
+  color: #000;
+  box-shadow: 0 0 30px #0f0, 0 0 60px #0f0;
+}
+</style>
+<button class="neon-btn">CLICK ME</button>`
+  },
+  {
+    title: 'Responsive Navbar',
+    code: `<style>
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #111;
+  color: #0f0;
+}
+.logo { font-weight: bold; font-size: 1.3rem; }
+.links a {
+  color: #0f0;
+  margin-left: 20px;
+  text-decoration: none;
+}
+.links a:hover { text-shadow: 0 0 8px #0f0; }
+@media (max-width: 600px) {
+  nav { flex-direction: column; gap: 10px; }
+}
+</style>
+<nav>
+  <div class="logo">ROYALEFLARE</div>
+  <div class="links">
+    <a href="#">Home</a>
+    <a href="#">About</a>
+    <a href="#">Contact</a>
+  </div>
+</nav>`
+  },
+  {
+    title: 'Hover Card',
+    code: `<style>
+.card {
+  width: 280px;
+  padding: 24px;
+  background: #0a1a0a;
+  border: 1px solid #0f0;
+  border-radius: 12px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(0,255,0,0.3);
+}
+.card h3 { color: #0f0; margin-bottom: 10px; }
+.card p { color: #8f8; font-size: 0.9rem; }
+</style>
+<div class="card">
+  <h3>Awesome Card</h3>
+  <p>Hover karo to dekh lo magic. Perfect for portfolios.</p>
+</div>`
+  },
+  {
+    title: 'Login Form',
+    code: `<style>
+.login-box {
+  max-width: 320px;
+  margin: 40px auto;
+  padding: 30px;
+  background: #0a0a0a;
+  border: 1px solid #0f0;
+  border-radius: 10px;
+  box-shadow: 0 0 20px #0f033;
+}
+.login-box h2 { color: #0f0; text-align: center; margin-bottom: 20px; }
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  background: #001100;
+  border: 1px solid #0a0;
+  color: #0f0;
+  border-radius: 4px;
+}
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  background: #0f0;
+  border: none;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+</style>
+<div class="login-box">
+  <h2>LOGIN</h2>
+  <input type="text" placeholder="Username">
+  <input type="password" placeholder="Password">
+  <button>Sign In</button>
+</div>`
+  },
+  {
+    title: 'CSS Loading Spinner',
+    code: `<style>
+.spinner {
+  width: 50px; height: 50px;
+  border: 4px solid #033;
+  border-top-color: #0f0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 40px auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+<div class="spinner"></div>`
+  },
+  {
+    title: 'Typing Effect',
+    code: `<h1 id="type"></h1>
+<script>
+const text = "Welcome to RoyaleFlare Code Runner...";
+let i = 0;
+const el = document.getElementById('type');
+function type() {
+  if (i < text.length) {
+    el.textContent += text.charAt(i);
+    i++;
+    setTimeout(type, 80);
+  }
+}
+type();
+<\/script>
+<style>
+#type { color: #0f0; font-family: monospace; border-right: 2px solid #0f0; }
+</style>`
+  },
+  {
+    title: 'Particle Background (simple)',
+    code: `<canvas id="c"></canvas>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = innerWidth; c.height = innerHeight;
+const particles = [];
+for (let i = 0; i < 80; i++) {
+  particles.push({
+    x: Math.random() * c.width,
+    y: Math.random() * c.height,
+    r: Math.random() * 2 + 1,
+    dx: (Math.random() - 0.5) * 1.5,
+    dy: (Math.random() - 0.5) * 1.5
+  });
+}
+function draw() {
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
+  ctx.fillRect(0,0,c.width,c.height);
+  particles.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fillStyle = '#0f0';
+    ctx.fill();
+    p.x += p.dx; p.y += p.dy;
+    if (p.x < 0 || p.x > c.width) p.dx *= -1;
+    if (p.y < 0 || p.y > c.height) p.dy *= -1;
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+<\/script>
+<style>body{margin:0;overflow:hidden;background:#000;} canvas{display:block;}</style>`
+  }
+];
+
+function openSnippets() {
+  const list = document.getElementById('snippetsList');
+  list.innerHTML = '';
+  snippets.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'snippet-item';
+    item.textContent = s.title;
+    item.onclick = () => {
+      editor.value = s.code;
+      updateLineNumbers();
+      updateStatus();
+      closeModal('snippetsModal');
+      showToast('Snippet loaded: ' + s.title);
+    };
+    list.appendChild(item);
+  });
+  document.getElementById('snippetsModal').classList.add('active');
+}
+
+function insertTemplate(name) {
+  if (name === 'boilerplate') {
+    editor.value = snippets[0].code;
+    updateLineNumbers();
+    updateStatus();
+    showToast('Boilerplate inserted');
+  }
+}
+
+/* ==================== AI ASSISTANT (Local Smart Replies) ==================== */
+const aiKnowledge = {
+  'neon button': snippets[1].code,
+  'button': snippets[1].code,
+  'navbar': snippets[2].code,
+  'nav': snippets[2].code,
+  'card': snippets[3].code,
+  'hover': snippets[3].code,
+  'login': snippets[4].code,
+  'form': snippets[4].code,
+  'spinner': snippets[5].code,
+  'loading': snippets[5].code,
+  'typing': snippets[6].code,
+  'typewriter': snippets[6].code,
+  'particle': snippets[7].code,
+  'particles': snippets[7].code,
+  'boilerplate': snippets[0].code,
+  'html': snippets[0].code,
+};
+
+const aiTips = [
+  "Tip: Ctrl+Enter se code run karo!",
+  "Tag library use karo for fast coding.",
+  "Custom tags bana ke save kar sakte ho.",
+  "Theme change karke apna look set karo.",
+  "Auto-run ON karo to live coding feel aayega.",
+  "Download button se file seedha save ho jati hai.",
+  "Console me errors dekh sakte ho (TERM button).",
+];
+
+function askAI() {
+  const input = document.getElementById('aiInput');
+  const q = input.value.trim().toLowerCase();
+  if (!q) return;
+  addAIMsg(q, 'user');
+  input.value = '';
+
+  setTimeout(() => {
+    let reply = '';
+    let code = null;
+
+    // Keyword matching
+    for (const key in aiKnowledge) {
+      if (q.includes(key)) {
+        code = aiKnowledge[key];
+        reply = `Yeh lo "${key}" ka ready code! Editor me daal diya. RUN daba ke dekh lo.`;
+        break;
+      }
+    }
+
+    if (!code) {
+      if (q.includes('help') || q.includes('kaise') || q.includes('kya')) {
+        reply = "Main yeh features help kar sakta hoon: neon button, navbar, card, login form, spinner, typing effect, particles, boilerplate. Inme se kuch type karo!";
+      } else if (q.includes('salam') || q.includes('hello') || q.includes('hi')) {
+        reply = "Walaikum Assalam! Coding start karte hain? Koi component chahiye to batao.";
+      } else if (q.includes('color') || q.includes('theme')) {
+        reply = "Theme button dabao aur wallpaper gallery se color scheme select karo. Matrix rain ka color bhi change ho jayega!";
+      } else if (q.includes('download') || q.includes('save')) {
+        reply = "DOWNLOAD button se aapka code .html file ban ke local me save ho jayega.";
+      } else {
+        reply = "Samajh gaya! Try keywords: neon button, navbar, card, login, spinner, typing, particles. Ya phir specific sawal poochho.\n\n" + aiTips[Math.floor(Math.random()*aiTips.length)];
+      }
+    }
+
+    addAIMsg(reply, 'bot');
+    if (code) {
+      editor.value = code;
+      updateLineNumbers();
+      updateStatus();
+    }
+  }, 400 + Math.random() * 400);
+}
+
+function quickAI(q) {
+  document.getElementById('aiInput').value = q;
+  askAI();
+}
+
+function addAIMsg(text, who) {
+  const chat = document.getElementById('aiChat');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + who;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function clearAIChat() {
+  document.getElementById('aiChat').innerHTML = '<div class="ai-msg bot">Chat cleared. Naya sawal poochho!</div>';
+}
+
+/* ==================== UTILS ==================== */
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Load saved data
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('rf_code');
+  if (saved) {
+    editor.value = saved;
+  } else if (!editor.value.trim()) {
+    // Put a nice demo so output is not blank
+    editor.value = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>RoyaleFlare Demo</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0a0a0a, #001a00);
+      color: #00ff41;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      text-shadow: 0 0 20px #00ff41;
+      margin-bottom: 10px;
+    }
+    p { color: #8f8; font-size: 1.1rem; }
+    .btn {
+      margin-top: 24px;
+      padding: 12px 28px;
+      background: transparent;
+      border: 2px solid #00ff41;
+      color: #00ff41;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn:hover {
+      background: #00ff41;
+      color: #000;
+      box-shadow: 0 0 25px #00ff41;
+    }
+  </style>
+</head>
+<body>
+  <h1>ROYALEFLARE CODE RUNNER</h1>
+  <p>Code likho, RUN dabao, magic dekho!</p>
+  <button class="btn" onclick="alert('Working perfectly!')">Test Button</button>
+  <script>
+    console.log('Demo loaded successfully');
+  <\/script>
+</body>
+</html>`;
+  }
+  updateLineNumbers();
+  updateStatus();
+
+  const savedTheme = localStorage.getItem('rf_theme');
+  if (savedTheme) {
+    try { applyTheme(JSON.parse(savedTheme)); } catch(e){}
+  }
+
+  // Auto run once on load so output is not empty
+  setTimeout(runCode, 300);
+});
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target === m) m.classList.remove('active');
+  });
+});
+</script>
+</body>
+</html>
